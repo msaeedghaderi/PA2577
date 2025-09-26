@@ -1,0 +1,63 @@
+services:
+  front-vote:
+    build: 
+      context: ./frontend_vote
+      target: dev
+    depends_on:
+      - redis
+    volumes:
+     - ./frontend_vote:/usr/local/app
+    ports:
+      - "5678:80"
+    networks:
+      - front-tier
+      - back-tier
+
+  front-result:
+    build: ./frontend_votes_result
+    # use nodemon rather than node for local dev
+    entrypoint: nodemon --inspect=0.0.0.0 server.js
+    depends_on:
+      - db
+    volumes:
+      - ./frontend_votes_result:/usr/local/app
+    ports:
+      - "5001:80"
+      - "127.0.0.1:9229:9229"
+    networks:
+      - front-tier
+      - back-tier
+
+  back-worker:
+    build:
+      context: ./backend
+    depends_on:
+      - redis
+      - db
+    networks:
+      - back-tier
+
+  redis:
+    image: redis:alpine
+    networks:
+      - back-tier
+
+  db:
+    image: mysql:latest
+    environment:
+      MYSQL_DATABASE: votesDB
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_PASSWORD: ""
+    ports:
+      - 3308:3306
+    volumes:
+      - "db-data:/var/lib/mysql"
+    networks:
+      - back-tier
+
+volumes:
+  db-data:
+
+networks:
+  front-tier:
+  back-tier:
