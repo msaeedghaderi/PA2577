@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: mysql-init }
+data:
+  init.sql: |
+    CREATE DATABASE IF NOT EXISTS votesDB;
+    CREATE USER IF NOT EXISTS 'votes_user'@'%' IDENTIFIED BY 'CHANGE_ME_STRONG';
+    GRANT ALL PRIVILEGES ON votesDB.* TO 'votes_user'@'%';
+    FLUSH PRIVILEGES;
+    CREATE TABLE IF NOT EXISTS votesDB.votes (
+      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+      option_value VARCHAR(10) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );

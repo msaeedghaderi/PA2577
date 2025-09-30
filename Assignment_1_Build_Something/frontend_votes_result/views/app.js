@@ -1,4 +1,4 @@
-var app = angular.module('coffeevstea', []);
+var app = angular.module('belgianmalinoisvsgermanshepherd', []);
 var socket = io.connect();
 
 var bg1 = document.getElementById('background-stats-1');

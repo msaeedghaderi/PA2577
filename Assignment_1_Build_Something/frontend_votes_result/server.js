@@ -1,80 +1,71 @@
-var express = require('express'),
-    async = require('async'),
-    mysql = require('mysql2'),
-    dbConfig = require('./dbConfig'),
-    cookieParser = require('cookie-parser'),
-    app = express(),
-    server = require('http').Server(app),
-    io = require('socket.io')(server);
+// frontend_votes_result/server.js
+import express from 'express';
+import { createPool } from 'mysql2/promise';
 
-var port = process.env.PORT || 4000;
+const app = express();
+const PORT = parseInt(process.env.PORT || '8080', 10);
 
-io.on('connection', function (socket) {
+// DB env (must match your K8s ConfigMap/Secret)
+const DB_HOST = process.env.DB_HOST || 'db';
+const DB_NAME = process.env.DB_NAME || 'votesdb';
+const DB_USER = process.env.DB_USER || 'appuser';
+const DB_PASS = process.env.DB_PASS || 'apppassword';
 
-  socket.emit('message', { text : 'Welcome!' });
-
-  socket.on('subscribe', function (data) {
-    socket.join(data.channel);
-  });
+// Create a shared connection pool (global for this process)
+const pool = createPool({
+  host: DB_HOST,
+  user: DB_USER,
+  password: DB_PASS,
+  database: DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
+// Simple home page
+app.get('/', (req, res) => {
+  res.type('html').send(`
+    <h1>Vote Results</h1>
+    <p>See JSON at <a href="/api/results">/api/results</a></p>
+    <p>Health: <a href="/api/health">/api/health</a></p>
+  `);
+});
 
-var pool = mysql.createPool(dbConfig);
-
-module.exports = pool;
-
-async.retry(
-  {times: 1000, interval: 1000},
-  function(callback) {
-      
-    pool.getConnection(function(err, client) {
-      if (err) {
-        console.error("Waiting for db");
-      }
-      callback(err, client);
-    });
-  },
-  function(err, client) {
-    if (err) {
-      return console.error("Giving up");
-    }
-    console.log("Connected to db");
-    getVotes(client);
+// Health check that pings the DB
+app.get('/api/health', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT 1 AS ok');
+    res.json({ status: 'ok', db: rows[0].ok === 1 ? 'up' : 'unknown' });
+  } catch (err) {
+    res.status(500).json({ status: 'error', error: String(err) });
   }
-);
-
-function getVotes(client) {
-    client.query('SELECT vote, COUNT(id) AS count FROM votes GROUP BY vote', function(err, result) {
-    if (err) {
-      console.error("Error performing query: " + err);
-    } else {
-      var votes = collectVotesFromResult(result);
-      io.sockets.emit("scores", JSON.stringify(votes));
-    }
-
-    setTimeout(function() {getVotes(client) }, 1000);
-  });
-}
-
-function collectVotesFromResult(result) {
-  var votes = {a: 0, b: 0};
-
-  result.forEach(function (row) {
-    votes[row.vote] = parseInt(row.count);
-  });
-
-  return votes;
-}
-
-app.use(cookieParser());
-app.use(express.urlencoded());
-app.use(express.static(__dirname + '/views'));
-
-app.get('/', function (req, res) {
-  res.sendFile(path.resolve(__dirname + '/views/index.html'));
 });
 
-server.listen(port, function () {
-  var port = server.address().port;
-  console.log('App running on port ' + port);
+// Results: aggregate and map a/b -> breed names
+app.get('/api/results', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT option_value AS code, COUNT(*) AS total FROM votes GROUP BY option_value'
+    );
+
+    const label = { a: 'Belgian Malinois', b: 'German Shepherd' };
+
+    // ensure missing options show as 0
+    const counts = { a: 0, b: 0 };
+    for (const r of rows) counts[r.code] = Number(r.total) || 0;
+
+    const data = [
+      { option: label.a, count: counts.a },
+      { option: label.b, count: counts.b },
+    ];
+
+    res.json(data);
+  } catch (err) {
+    console.error('results error:', err);
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`results-api on ${PORT}`);
 });
