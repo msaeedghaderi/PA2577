@@ -1,12 +1,12 @@
-# Docker Compose for All-At-Once Code Clone Detection
+# Docker Compose for All-At-Once Code Clone Detection + MonitorTool
 
 version: "3.8"
 services:
   clone-detector:
     image: cljdetector
-    command: clear 
+    command: clear
     ports:
-      - 8080:3000
+      - "8080:3000"
     volumes:
       - ./Containers/cljdetector:/usr/src/app
       - qc-volume:/QualitasCorpus
@@ -22,16 +22,23 @@ services:
     restart: always
     command: --quiet --syslog
     ports:
-      - 27017:27017
+      - "27017:27017"
     expose:
       - "27017"
     volumes:
       - dbstorage:/data/db
       - dbconfig:/data/configdb
-    
+
+  monitor-tool:
+    build: ./Containers/MonitorTool
+    image: monitor-tool
+    depends_on:
+      - dbstorage
+    ports:
+      - "8081:8080"
+
 volumes:
   dbstorage:
   dbconfig:
   qc-volume:
     external: true
-    

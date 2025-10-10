@@ -8,8 +8,12 @@
 (def source-dir (or (System/getenv "SOURCEDIR") "/tmp"))
 (def source-type #".*\.java")
 
+;; Function Modified
 (defn ts-println [& args]
-  (println (.toString (java.time.LocalDateTime/now)) args))
+  (let [ts (str (java.time.LocalDateTime/now))]
+    (println ts args)
+    (storage/addUpdate! ts args)))
+
 
 (defn maybe-clear-db [args]
   (when (some #{"CLEAR"} (map string/upper-case args))

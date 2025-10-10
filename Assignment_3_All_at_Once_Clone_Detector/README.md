@@ -1,21 +1,14 @@
-# Big Data Analytics
-Work material for parts of a course "Applied Computing and Big Data" offered by Blekinge Institute of Technology.
+# All At Once Clone Detector
 
-We are using the [Qualitas Corpus](http://qualitascorpus.com/) as a starting point for some fun very-nearly-big-data analysis.
+## Start and deploy
 
-Documentation and step-by-step instructions for this part of the course is found in the [Documentation](Documentation) directory.
+Download the QualitasCorpus manually: https://bthse-my.sharepoint.com/:u:/g/personal/msv_bth_se/ETA72qrzdvtAkGqaXucVgVsB4obGzc1io_3oFPhO6qPgXg?e=KjhQQr 
+Unzip this archive and put the two tar-files in BigDataAnalytics/Containers/CorpusGetter
 
-## About the Course
-The course Applied Cloud Computing and Big Data is a 7.5 ECTS course offered by Blekinge Institute of Technology. The course is organised around three themes, and all three themes must be completed to complete the course:
+run the following commands in terminal
 
-- Cloud Provisioning and Deployment
-- The Business Case for Cloud Computing
-- Big Data Analytics
+docker build -t corpusgetter Containers/CorpusGetter
+docker volume create qc-volume
+docker run -it -v qc-volume:/QualitasCorpus -v ./Containers/CorpusGetter:/Download --name qc-getter corpusgetter ./qc-get.sh INSTALL
 
-The course is divided across two source code repositories:
-
-- https://github.com/mickesv/ProvisioningDeployment.git contains the instructions and source code for the Cloud Provisioning and Deployment, and the Business Case for Cloud Computing parts of the course.
-- https://github.com/mickesv/BigDataAnalytics.git contains the instructions and source code for the Big Data Analytics part of the course.
-
-## Apply
-If you wish to apply for the course, please visit [UniversityAdmissions](https://www.universityadmissions.se/intl/start) and search for "Applied Cloud Computing and Big Data".
+docker compose -f all-at-once.yaml build
