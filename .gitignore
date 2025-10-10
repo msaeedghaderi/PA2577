@@ -42,3 +42,7 @@ Thumbs.db
 # ---- Misc ----
 .env
 *.secret
+
+# ---- Compressed files ----
+*.zip
+*.7z
