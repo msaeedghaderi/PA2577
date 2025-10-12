@@ -35,7 +35,9 @@ services:
     depends_on:
       - dbstorage
     ports:
-      - "8081:8080"
+      - "8081:80"
+    environment:
+      - MONGODB_URI=mongodb://dbstorage:27017/monitor
 
 volumes:
   dbstorage:
