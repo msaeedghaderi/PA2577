@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta http-equiv="refresh" content="300">
+  <title>MonitorTool</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(360px,1fr)); gap: 1.2rem; }
+    .card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    .muted { color: #6b7280; font-size: 0.9rem; }
+    canvas { width: 100%; height: 240px; }
+    h2 { margin: 0 0 .5rem 0; }
+    .pill { display: inline-block; padding: .15rem .5rem; border-radius: 999px; background: #f3f4f6; margin-right: .4rem; font-size: .8rem; }
+    .fit { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9rem; white-space: pre-wrap; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>MonitorTool</h1>
+  <p class="muted">Live counts & processing-time trends for your pipeline tables.</p>
+  <div class="grid">
+    {% for t in tables %}
+      <div class="card">
+        <h2>{{ t }}</h2>
+        <div>
+          <span class="pill">count</span>
+          <!-- <span class="pill">p50 ms</span>
+          <span class="pill">p95 ms</span>
+          <span class="pill">mean ms</span> -->
+        </div>
+        <canvas id="chart-{{t}}"></canvas>
+        <!-- <div class="fit">
+          {% if fits[t] %}
+            {% for f in fits[t] %}
+            {{ f.kind|capitalize }} fit: slope={{ '%.3f'|format(f.slope) }}, r²={{ '%.3f'|format(f.r2) }}, n={{ f.n }}
+            {% if f.kind == 'exponential' %}
+              → duration ≈ exp({{ '%.3f'|format(f.intercept) }}) * exp({{ '%.3f'|format(f.slope) }} * processed)
+            {% else %}
+              → duration ≈ {{ '%.3f'|format(f.slope) }} * processed + {{ '%.3f'|format(f.intercept) }}
+            {% endif %}
+            <br/>
+            {% endfor %}
+          {% else %}
+            No fit yet (waiting for durations).
+          {% endif %}
+        </div> -->
+      </div>
+    {% endfor %}
+  </div>
+
+<script>
+const SAMPLES = {{ samples | tojson }};
+
+// 24-h UTC labels (or keep your existing mkLabels)
+function mkLabels(rows) {
+  const fmt = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false, timeZone: 'UTC'
+  });
+  return rows.map(r => fmt.format(new Date(r.ts_utc)));
+}
+function mkSeries(rows, key) { return rows.map(r => r[key] ?? null); }
+
+for (const [table, rows] of Object.entries(SAMPLES)) {
+  const ctx = document.getElementById('chart-' + table).getContext('2d');
+  const labels = mkLabels(rows);
+  const count = mkSeries(rows, 'total_count');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'count', data: count, yAxisID: 'y1' }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        // Hide left y-axis values (ticks & grid); line still renders
+        y1: { type: 'linear', position: 'left',
+              ticks: { display: true }, grid: { display: true } }
+      },
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+}
+</script>
+</body>
+</html>

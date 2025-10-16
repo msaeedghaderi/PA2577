@@ -29,18 +29,29 @@ services:
       - dbstorage:/data/db
       - dbconfig:/data/configdb
 
-  monitor-tool:
-    build: ./Containers/MonitorTool
-    image: monitor-tool
+  monitor-tools:
+    build:
+      context: ./Containers/MonitorTool
+    image: monitor-tools
+    environment:
+      MT_DB_URL: mongodb://dbstorage:27017/cloneDetector
+      MT_TRACK_TABLES: files,chunks,candidates,clones,statusUpdates
+      MT_STATUS_UPDATES_TABLE: statusupdates
+      MT_SAMPLE_INTERVAL_SECONDS: "300"
+      MT_SQLITE_PATH: /data/monitor.sqlite
+      MT_TIMEZONE: Europe/Stockholm
     depends_on:
       - dbstorage
+    # volumes:
+    #   - monitor-data:/data
     ports:
-      - "8081:80"
-    environment:
-      - MONGODB_URI=mongodb://dbstorage:27017/monitor
+      - "8081:8081"
+    restart: unless-stopped
+
 
 volumes:
   dbstorage:
   dbconfig:
   qc-volume:
     external: true
+  # monitor-data:

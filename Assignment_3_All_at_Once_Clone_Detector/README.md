@@ -20,6 +20,7 @@ docker build -t corpusgetter Containers/CorpusGetter
 3) **Create volume for QC**
 ```bash
 docker volume create qc-volume
+# docker volume create monitor-data
 ```
 
 4) **Populate the volume**
