@@ -14,9 +14,9 @@ import numpy as np
 from .db import engine
 from .analysis import linear_fit, exponential_fit, summarize_durations
 
-TRACK_TABLES = [t.strip() for t in os.getenv('MT_TRACK_TABLES', 'files,chunks,candidates,clones').split(',') if t.strip()]
-STATUS_TABLE = os.getenv('MT_STATUS_UPDATES_TABLE', 'status_updates')
-SAMPLE_INTERVAL = int(os.getenv('MT_SAMPLE_INTERVAL_SECONDS', '30'))
+TRACK_TABLES = [t.strip() for t in os.getenv('MT_TRACK_TABLES', 'files,chunks,candidates,clones,statusUpdates').split(',') if t.strip()]
+STATUS_TABLE = os.getenv('MT_STATUS_UPDATES_TABLE', 'statusUpdates')
+SAMPLE_INTERVAL = int(os.getenv('MT_SAMPLE_INTERVAL_SECONDS', '300'))
 SQLITE_PATH = os.getenv('MT_SQLITE_PATH', '/data/monitor.sqlite')
 
 import sqlite3

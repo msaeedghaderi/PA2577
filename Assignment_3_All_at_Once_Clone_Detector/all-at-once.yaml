@@ -36,14 +36,17 @@ services:
     environment:
       MT_DB_URL: mongodb://dbstorage:27017/cloneDetector
       MT_TRACK_TABLES: files,chunks,candidates,clones,statusUpdates
-      MT_STATUS_UPDATES_TABLE: statusupdates
+      MT_STATUS_UPDATES_TABLE: statusUpdates
       MT_SAMPLE_INTERVAL_SECONDS: "300"
       MT_SQLITE_PATH: /data/monitor.sqlite
-      MT_TIMEZONE: Europe/Stockholm
+      MT_EXPORT_DIR: /data/exports
+      MT_RAW_LIMIT: "100"
+      MT_EXPORT_EVERY_N_SAMPLES: "30"
+      MT_TIMEZONE: UTC
     depends_on:
       - dbstorage
-    # volumes:
-    #   - monitor-data:/data
+    volumes:
+      - monitor-data:/data
     ports:
       - "8081:8081"
     restart: unless-stopped
@@ -54,4 +57,4 @@ volumes:
   dbconfig:
   qc-volume:
     external: true
-  # monitor-data:
+  monitor-data:

@@ -26,26 +26,8 @@
         <h2>{{ t }}</h2>
         <div>
           <span class="pill">count</span>
-          <!-- <span class="pill">p50 ms</span>
-          <span class="pill">p95 ms</span>
-          <span class="pill">mean ms</span> -->
         </div>
         <canvas id="chart-{{t}}"></canvas>
-        <!-- <div class="fit">
-          {% if fits[t] %}
-            {% for f in fits[t] %}
-            {{ f.kind|capitalize }} fit: slope={{ '%.3f'|format(f.slope) }}, r²={{ '%.3f'|format(f.r2) }}, n={{ f.n }}
-            {% if f.kind == 'exponential' %}
-              → duration ≈ exp({{ '%.3f'|format(f.intercept) }}) * exp({{ '%.3f'|format(f.slope) }} * processed)
-            {% else %}
-              → duration ≈ {{ '%.3f'|format(f.slope) }} * processed + {{ '%.3f'|format(f.intercept) }}
-            {% endif %}
-            <br/>
-            {% endfor %}
-          {% else %}
-            No fit yet (waiting for durations).
-          {% endif %}
-        </div> -->
       </div>
     {% endfor %}
   </div>
@@ -80,7 +62,6 @@ for (const [table, rows] of Object.entries(SAMPLES)) {
       responsive: true,
       interaction: { mode: 'index', intersect: false },
       scales: {
-        // Hide left y-axis values (ticks & grid); line still renders
         y1: { type: 'linear', position: 'left',
               ticks: { display: true }, grid: { display: true } }
       },

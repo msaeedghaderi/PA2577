@@ -1,24 +1,25 @@
 from __future__ import annotations
-import os
+import os, sqlite3
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import sqlite3
+from pathlib import Path
 
-# --- choose sampler based on DB URL scheme
-MT_DB_URL = os.getenv("MT_DB_URL", "")
-if MT_DB_URL.startswith("mongodb://") or MT_DB_URL.startswith("mongodb+srv://"):
-    from .sampler_mongo import Sampler, SQLITE_PATH, TRACK_TABLES
-else:
-    from .sampler import Sampler, SQLITE_PATH, TRACK_TABLES
+# Mongo sampler (we’re in a Mongo stack)
+from .sampler_mongo import Sampler, SQLITE_PATH, TRACK_TABLES, SAMPLE_INTERVAL
 
-# --- create app BEFORE using route decorators
 app = FastAPI(title="MonitorTool")
 templates = Jinja2Templates(directory="app/templates")
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# background sampler
+# serve static + exported artifacts
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# exports live in /data/exports (mounted volume)
+export_dir = os.getenv("MT_EXPORT_DIR", "/data/exports")
+os.makedirs(export_dir, exist_ok=True)
+app.mount("/exports", StaticFiles(directory=export_dir), name="exports")
+
+# start background sampler
 _sampler = Sampler()
 _sampler.start()
 
@@ -46,7 +47,13 @@ def dashboard(request: Request):
         fits[t] = [dict(r) for r in rows]
     return templates.TemplateResponse(
         "index.html",
-        {"request": request, "samples": samples, "fits": fits, "tables": TRACK_TABLES},
+        {
+            "request": request,
+            "samples": samples,
+            "fits": fits,
+            "tables": TRACK_TABLES,
+            "sample_interval": SAMPLE_INTERVAL,  # handy for client-side auto-refresh
+        },
     )
 
 @app.get("/api/samples", response_class=JSONResponse)
@@ -76,3 +83,12 @@ def metrics():
                 lines.append(f'monitortool_proc_p50_ms{{table="{t}"}} {row["p50_ms"]}')
                 lines.append(f'monitortool_proc_p95_ms{{table="{t}"}} {row["p95_ms"]}')
     return PlainTextResponse("\n".join(lines) + "\n")
+
+@app.get("/exports/", response_class=HTMLResponse)
+def list_exports():
+    root = Path(export_dir)
+    items = []
+    for p in sorted(root.iterdir()):
+        if p.is_file():
+            items.append(f'<li><a href="/exports/{p.name}">{p.name}</a></li>')
+    return HTMLResponse("<h1>Exports</h1><ul>" + "\n".join(items) + "</ul>")
